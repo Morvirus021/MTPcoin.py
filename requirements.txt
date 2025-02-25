@@ -1,0 +1,8 @@
+python-telegram-bot
+requests
+pandas
+numpy
+ccxt
+scikit-learn
+tensorflow
+matplotlib
