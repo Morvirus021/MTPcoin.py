@@ -1,30 +1,44 @@
 import requests
-# دریافت داده‌های بازار از CoinGecko
-def get_crypto_data(crypto_symbol='bitcoin'):
-    url = f'https://api.coingecko.com/api/v3/coins/{crypto_symbol}/market_chart?vs_currency=usd&days=1'
-    response = requests.get(url)
-    data = response.json()
-    return data
 import talib
 import numpy as np
+from telegram import Bot
+from telegram.ext import Updater, CommandHandler
+
+# دریافت داده‌های بازار از CoinMarketCap
+def get_crypto_data(crypto_symbol='bitcoin'):
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+    headers = {
+        "X-CMC_PRO_API_KEY": 'd93ab40b-3cd1-48d7-9a38-c3167387c01b',  # API Key شما
+        "Accept": "application/json",
+    }
+    params = {
+        "symbol": crypto_symbol.upper(),
+        "convert": "USD",
+        "limit": 1
+    }
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+    return data['data'][0] if data['status']['error_code'] == 0 else None
 
 # محاسبه RSI
 def calculate_rsi(prices):
     rsi = talib.RSI(np.array(prices), timeperiod=14)
     return rsi[-1]  # آخرین مقدار RSI
-from telegram import Bot
-from telegram.ext import Updater, CommandHandler
 
-TOKEN = '7561510736:AAEZ4SkuRqkiq_N8HnWsmIc7OtO9JUhxP6g' 
 # دستورات ربات
 def start(update, context):
     update.message.reply_text('سلام! من ربات تحلیل کریپتو هستم.')
 
 def get_crypto_signal(update, context):
     # ارز دیجیتال مورد نظر
-    crypto_symbol = 'bitcoin'  # اینجا می‌تونی ارز رو تغییر بدی
+    crypto_symbol = 'BTC'  # تغییر به نماد ارز مورد نظر
     data = get_crypto_data(crypto_symbol)
-    prices = [price[1] for price in data['prices']]  # قیمت‌ها
+    
+    if data is None:
+        update.message.reply_text("خطا در دریافت داده‌ها.")
+        return
+    
+    prices = [data['quote']['USD']['price']]  # قیمت فعلی ارز
     rsi_value = calculate_rsi(prices)
     
     # تحلیل بر اساس RSI
@@ -39,6 +53,7 @@ def get_crypto_signal(update, context):
 
 # راه‌اندازی ربات
 def main():
+    TOKEN = '7561510736:AAEZ4SkuRqkiq_N8HnWsmIc7OtO9JUhxP6g'  # توکن ربات تلگرام شما
     updater = Updater(TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', start))
@@ -46,5 +61,5 @@ def main():
     updater.start_polling()
     updater.idle()
 
-if __name__== '__main__':
+if name == '__main__':
     main()
