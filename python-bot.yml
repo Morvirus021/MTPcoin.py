@@ -1,0 +1,5 @@
+- name: Run bot
+  run: |
+    python bot.py
+  env:
+    TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
